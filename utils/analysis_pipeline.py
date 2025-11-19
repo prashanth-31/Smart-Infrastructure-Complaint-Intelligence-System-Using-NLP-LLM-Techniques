@@ -30,6 +30,25 @@ class AnalysisResult:
 _classifier_pipeline_cache: Dict[int, Pipeline] = {}
 _sentiment_pipeline_cache: Dict[int, Pipeline] = {}
 
+_MODEL_LABEL_MAP: Dict[str, str] = {
+    "LABEL_6": "Street Lighting Fault",
+    "LABEL_16": "Electrical Hazard",
+    "LABEL_21": "Structural Safety Risk",
+    "LABEL_28": "Water Supply Disruption",
+}
+
+_KEYWORD_CATEGORY_RULES: Dict[str, Tuple[Tuple[str, ...], str]] = {
+    "Street Lighting Fault": (("street light", "lamp", "lighting", "dark stretch", "pole"), "Detected lighting-specific terms"),
+    "Electrical Hazard": (("electric", "wire", "transformer", "power line", "spark"), "Electric hazard keywords present"),
+    "Water Supply Disruption": (("water", "pipeline", "tap", "supply", "tank", "leakage"), "Water supply references found"),
+    "Waste & Sanitation": (("garbage", "trash", "waste", "dump", "sanitation", "sewage"), "Waste management terms detected"),
+    "Road & Pothole Hazard": (("pothole", "road", "asphalt", "lane", "traffic", "accident"), "Road safety indicators detected"),
+    "Drainage / Flooding": (("drain", "flood", "storm water", "clogged", "overflow"), "Drainage issues mentioned"),
+    "Infrastructure Damage": (("crack", "collapse", "retaining wall", "bridge", "structure", "damage"), "Structural risk phrases located"),
+    "Public Safety Concern": (("safety", "hazard", "injury", "danger", "risk"), "General safety risk detected"),
+    "General Complaint": (tuple(), "No strong domain keywords; preserving model output"),
+}
+
 class _ScoreDict(TypedDict):
     label: str
     score: float
@@ -84,13 +103,55 @@ def _predict_with_stub(classifier: Any, text: str) -> Tuple[str, float, Probabil
     return label, float(probs[label_idx]), [{"label": l, "score": float(p)} for l, p in zip(labels, probs)]
 
 
-def _predict_classifier(bundle: ModelBundle, text: str) -> Tuple[str, float, ProbabilityList]:
+def _select_keyword_category(raw_text: str) -> tuple[str, str]:
+    lowered = raw_text.lower()
+    best_match: tuple[str, int, List[str]] | None = None
+    for category, (keywords, rationale) in _KEYWORD_CATEGORY_RULES.items():
+        if not keywords:
+            continue
+        hits = [kw for kw in keywords if kw in lowered]
+        if hits:
+            score = len(hits)
+            if best_match is None or score > best_match[1]:
+                best_match = (category, score, hits)
+    if best_match is None:
+        return "General Complaint", _KEYWORD_CATEGORY_RULES["General Complaint"][1]
+    category, _, hits = best_match
+    rationale = ", ".join(sorted(set(hits)))
+    explanation = f"Matched keywords: {rationale}"
+    return category, explanation
+
+
+def _refine_issue_category(model_label: str, raw_text: str, confidence: float, probabilities: ProbabilityList) -> tuple[str, str]:
+    if model_label in _MODEL_LABEL_MAP:
+        mapped = _MODEL_LABEL_MAP[model_label]
+        rationale = f"Model label {model_label} mapped to domain category '{mapped}'."
+    else:
+        mapped = model_label.replace("_", " ").title()
+        rationale = f"Using direct model label '{model_label}'."
+
+    keyword_category, keyword_rationale = _select_keyword_category(raw_text)
+    if keyword_category != "General Complaint":
+        threshold = 0.68
+        if keyword_category != mapped and confidence < threshold:
+            mapped = keyword_category
+            rationale = keyword_rationale
+        elif keyword_category == mapped:
+            rationale = keyword_rationale
+    return mapped, rationale
+
+
+def _predict_classifier(
+    bundle: ModelBundle,
+    cleaned_text: str,
+    raw_text: str,
+) -> Tuple[str, float, ProbabilityList, Dict[str, Any]]:
     classifier = bundle.classifier
     if not hasattr(classifier, "config") or not bundle.classifier_tokenizer:
         raise RuntimeError("Classifier model is unavailable; expected a transformer model with tokenizer.")
 
     cls_pipeline = _get_text_classification_pipeline(bundle)
-    raw_scores: Any = cls_pipeline(text)
+    raw_scores: Any = cls_pipeline(cleaned_text)
     candidate: Sequence[Any]
     if isinstance(raw_scores, Sequence) and raw_scores and isinstance(raw_scores[0], Sequence):
         candidate = raw_scores[0]
@@ -104,8 +165,18 @@ def _predict_classifier(bundle: ModelBundle, text: str) -> Tuple[str, float, Pro
         raise RuntimeError("Classifier produced no scores for the provided text.")
 
     typed_scores: ProbabilityList = [dict(score) for score in scores]
-    best = max(typed_scores, key=lambda s: float(s.get("score", 0.0)))
-    return str(best.get("label", "Unknown")), float(best.get("score", 0.0)), typed_scores
+    typed_scores.sort(key=lambda item: float(item.get("score", 0.0)), reverse=True)
+    best = typed_scores[0]
+    model_label = str(best.get("label", "Unknown"))
+    confidence = float(best.get("score", 0.0))
+    refined_label, rationale = _refine_issue_category(model_label, raw_text, confidence, typed_scores)
+
+    metadata = {
+        "model_label": model_label,
+        "rationale": rationale,
+        "probabilities": typed_scores,
+    }
+    return refined_label, confidence, typed_scores, metadata
 
 
 def _predict_sentiment(bundle: ModelBundle, text: str) -> Tuple[str, float, ProbabilityList]:
@@ -286,7 +357,7 @@ def _run_ner(bundle: ModelBundle, text: str) -> List[Dict[str, Any]]:
 
 def analyze_complaint(text: str, bundle: ModelBundle) -> AnalysisResult:
     cleaned = normalize_text(text)
-    issue_label, issue_score, _ = _predict_classifier(bundle, cleaned)
+    issue_label, issue_score, _, issue_meta = _predict_classifier(bundle, cleaned, text)
     severity_label, severity_score, _ = _predict_severity(bundle, cleaned, raw_text=text)
     urgency_label, urgency_score, _ = _predict_sentiment(bundle, cleaned)
     entities = _run_ner(bundle, text)
@@ -297,6 +368,9 @@ def analyze_complaint(text: str, bundle: ModelBundle) -> AnalysisResult:
     metadata = {
         "mode": bundle.metadata.get("mode", "production"),
         "entity_count": len(entities),
+        "issue_model_label": issue_meta.get("model_label"),
+        "issue_label_rationale": issue_meta.get("rationale"),
+        "issue_probabilities": issue_meta.get("probabilities", []),
     }
 
     return AnalysisResult(

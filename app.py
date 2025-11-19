@@ -520,6 +520,21 @@ def _handle_analysis_page() -> None:
         unsafe_allow_html=True,
     )
 
+    st.markdown(
+        """
+<div class="insight-card">
+    <h4>What this AI does best</h4>
+    <ul>
+        <li>Ranks complaint category with a fine-tuned BERT classifier and civic keyword heuristics.</li>
+        <li>Flags severity using an SVM model boosted by urgency keywords for fail-safe prioritisation.</li>
+        <li>Infers citizen sentiment and urgency cues with a MiniLM transformer.</li>
+        <li>Extracts locations, assets, and problem terms with spaCy NER for GIS routing.</li>
+    </ul>
+</div>
+""",
+        unsafe_allow_html=True,
+    )
+
     samples = {
         "Street Light Outage": "The street light near the 5th cross in Jayanagar has not been working for three days, leaving the stretch dark and prone to accidents.",
         "Water Supply Disruption": "Residents of Indiranagar 9th Main have had no water supply for 24 hours. Overhead tanks are empty and senior citizens are impacted.",
@@ -644,6 +659,35 @@ def _render_analysis_output(analysis: AnalysisResult, compact: bool = False) -> 
         ),
         unsafe_allow_html=True,
     )
+
+    issue_meta = analysis.metadata or {}
+    issue_model_label = issue_meta.get("issue_model_label")
+    issue_rationale = issue_meta.get("issue_label_rationale")
+    issue_probabilities = issue_meta.get("issue_probabilities", [])
+    if issue_model_label or issue_probabilities:
+        probability_items = ""
+        for entry in issue_probabilities[:5]:
+            raw_label = html.escape(str(entry.get("label", "")))
+            pct = float(entry.get("score", 0.0)) * 100.0
+            probability_items += f"<li><strong>{raw_label}</strong>: {pct:.1f}%</li>"
+        if not probability_items:
+            probability_items = "<li>No probability breakdown available.</li>"
+        rationale_html = html.escape(str(issue_rationale)) if issue_rationale else "Model-driven classification."
+        st.markdown(
+            """
+<div class="insight-card">
+  <h4>Classifier diagnostics</h4>
+  <p class="muted-text">Base model label: <strong>{model_label}</strong></p>
+  <p class="muted-text">{rationale}</p>
+  <ul>{items}</ul>
+</div>
+""".format(
+                model_label=html.escape(str(issue_model_label or "Unknown")),
+                rationale=rationale_html,
+                items=probability_items,
+            ),
+            unsafe_allow_html=True,
+        )
 
     entity_html = _entity_badges(analysis.entities)
     if entity_html:
