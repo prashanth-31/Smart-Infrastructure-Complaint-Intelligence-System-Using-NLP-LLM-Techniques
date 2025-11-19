@@ -1,15 +1,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Tuple
+import logging
+from typing import Any, Dict, Iterable, List, Sequence, Tuple, TypedDict
 
 import numpy as np
-import logging
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, TypedDict
 
 from transformers import Pipeline, pipeline
 
-from models.pipeline_loader import ModelBundle, StubSentiment, StubSeverity
+from models.pipeline_loader import ModelBundle, StubSeverity
 from utils.preprocessing import normalize_text
 from utils.severity_rules import infer_severity_from_keywords
 
@@ -57,7 +56,7 @@ def _get_text_classification_pipeline(bundle: ModelBundle) -> Pipeline:
     return _classifier_pipeline_cache[key]
 
 
-def _get_sentiment_pipeline(bundle: ModelBundle) -> Optional[Pipeline]:
+def _get_sentiment_pipeline(bundle: ModelBundle) -> Pipeline:
     key = id(bundle.sentiment)
     if key not in _sentiment_pipeline_cache:
         try:
@@ -69,8 +68,8 @@ def _get_sentiment_pipeline(bundle: ModelBundle) -> Optional[Pipeline]:
                 return_all_scores=True,
             )
         except Exception as exc:
-            logging.warning("Falling back to sentiment stub due to pipeline error: %s", exc)
-            return None
+            logging.error("Sentiment pipeline initialisation failed: %s", exc)
+            raise RuntimeError("Sentiment model pipeline could not be initialised") from exc
     return _sentiment_pipeline_cache[key]
 
 
@@ -87,52 +86,56 @@ def _predict_with_stub(classifier: Any, text: str) -> Tuple[str, float, Probabil
 
 def _predict_classifier(bundle: ModelBundle, text: str) -> Tuple[str, float, ProbabilityList]:
     classifier = bundle.classifier
-    if hasattr(classifier, "config") and bundle.classifier_tokenizer:
-        cls_pipeline = _get_text_classification_pipeline(bundle)
-        raw_scores: Any = cls_pipeline(text)
-        candidate: Sequence[Any]
-        if isinstance(raw_scores, Sequence) and raw_scores and isinstance(raw_scores[0], Sequence):
-            candidate = raw_scores[0]  # batched pipeline output
-        elif isinstance(raw_scores, Sequence):
-            candidate = raw_scores
-        else:
-            candidate = list(raw_scores)
-        scores = _normalize_scores(candidate)
-        if not scores:
-            return _predict_with_stub(classifier, text)
-        typed_scores: ProbabilityList = [dict(score) for score in scores]
-        best = max(typed_scores, key=lambda s: float(s.get("score", 0.0)))
-        return str(best.get("label", "Unknown")), float(best.get("score", 0.0)), typed_scores
-    return _predict_with_stub(classifier, text)
+    if not hasattr(classifier, "config") or not bundle.classifier_tokenizer:
+        raise RuntimeError("Classifier model is unavailable; expected a transformer model with tokenizer.")
+
+    cls_pipeline = _get_text_classification_pipeline(bundle)
+    raw_scores: Any = cls_pipeline(text)
+    candidate: Sequence[Any]
+    if isinstance(raw_scores, Sequence) and raw_scores and isinstance(raw_scores[0], Sequence):
+        candidate = raw_scores[0]
+    elif isinstance(raw_scores, Sequence):
+        candidate = raw_scores
+    else:
+        candidate = list(raw_scores)
+
+    scores = _normalize_scores(candidate)
+    if not scores:
+        raise RuntimeError("Classifier produced no scores for the provided text.")
+
+    typed_scores: ProbabilityList = [dict(score) for score in scores]
+    best = max(typed_scores, key=lambda s: float(s.get("score", 0.0)))
+    return str(best.get("label", "Unknown")), float(best.get("score", 0.0)), typed_scores
 
 
 def _predict_sentiment(bundle: ModelBundle, text: str) -> Tuple[str, float, ProbabilityList]:
     sentiment = bundle.sentiment
-    if hasattr(sentiment, "config") and bundle.sentiment_tokenizer:
-        sent_pipeline = _get_sentiment_pipeline(bundle)
-        if sent_pipeline is None:
-            return _predict_with_stub(StubSentiment(), text)
-        raw_scores: Any = sent_pipeline(text)
-        candidate: Sequence[Any]
-        if isinstance(raw_scores, Sequence) and raw_scores and isinstance(raw_scores[0], Sequence):
-            candidate = raw_scores[0]
-        elif isinstance(raw_scores, Sequence):
-            candidate = raw_scores
-        else:
-            candidate = list(raw_scores)
-        normalized_scores = _normalize_scores(candidate)
-        if not normalized_scores:
-            return _predict_with_stub(StubSentiment(), text)
-        best_entry = max(normalized_scores, key=lambda s: s["score"])
-        mapped_label = _map_sentiment_label(best_entry["label"])
-        mapped_scores = [
-            {"label": _map_sentiment_label(score["label"]), "score": float(score["score"])}
-            for score in normalized_scores
-        ]
-        best_score = next((s for s in mapped_scores if s["label"] == mapped_label), None)
-        confidence = float(best_score["score"]) if best_score else float(best_entry["score"])
-        return mapped_label, confidence, mapped_scores
-    return _predict_with_stub(StubSentiment(), text)
+    if not hasattr(sentiment, "config") or not bundle.sentiment_tokenizer:
+        raise RuntimeError("Sentiment model is unavailable; expected a transformer model with tokenizer.")
+
+    sent_pipeline = _get_sentiment_pipeline(bundle)
+    raw_scores: Any = sent_pipeline(text)
+    candidate: Sequence[Any]
+    if isinstance(raw_scores, Sequence) and raw_scores and isinstance(raw_scores[0], Sequence):
+        candidate = raw_scores[0]
+    elif isinstance(raw_scores, Sequence):
+        candidate = raw_scores
+    else:
+        candidate = list(raw_scores)
+
+    normalized_scores = _normalize_scores(candidate)
+    if not normalized_scores:
+        raise RuntimeError("Sentiment model produced no scores for the provided text.")
+
+    best_entry = max(normalized_scores, key=lambda s: s["score"])
+    mapped_label = _map_sentiment_label(best_entry["label"])
+    mapped_scores = [
+        {"label": _map_sentiment_label(score["label"]), "score": float(score["score"])}
+        for score in normalized_scores
+    ]
+    best_score = next((s for s in mapped_scores if s["label"] == mapped_label), None)
+    confidence = float(best_score["score"]) if best_score else float(best_entry["score"])
+    return mapped_label, confidence, mapped_scores
 
 
 def _map_sentiment_label(label: str) -> str:

@@ -29,7 +29,7 @@ st.set_page_config(
     layout="wide",
 )
 
-bundle = load_model_bundle()
+bundle = load_model_bundle(enable_stubs=True, allow_stub_for={"severity"})
 
 APP_ROOT = Path(__file__).resolve().parent
 
@@ -44,183 +44,217 @@ def _render_global_styles(theme: str) -> None:
     if css_path.exists():
         st.markdown(f"<style>{css_path.read_text()}</style>", unsafe_allow_html=True)
 
+    shared_transitions = """
+.stApp, html, body, .insight-card, .history-card, .hero-card, .metric-highlight, .summary-pill, .entity-chip {
+    transition: background-color 0.6s ease, color 0.6s ease, border-color 0.6s ease, box-shadow 0.6s ease;
+}
+.insight-card, .history-card {
+    backdrop-filter: blur(14px);
+    border-radius: 14px;
+}
+.analysis-inline-ner {
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-family: "Space Mono", "Fira Code", monospace;
+    font-size: 0.92rem;
+    line-height: 1.7;
+    transition: background-color 0.6s ease, color 0.6s ease, border-color 0.6s ease;
+}
+"""
+
     if theme == "dark":
         st.markdown(
-            """
+            f"""
 <style>
-html, body, .stApp {
-    background-color: #0b1120 !important;
-    color: #e2e8f0 !important;
-}
+html, body, .stApp {{
+    background: radial-gradient(circle at top, #1f2937 0%, #0b1120 55%, #060b16 100%) !important;
+    color: #f8fafc !important;
+}}
 
-:root {
+:root {{
     --hero-gradient: linear-gradient(135deg, #1f2937, #1e3a8a, #312e81);
-    --card-bg: rgba(15, 23, 42, 0.95);
-    --card-border: rgba(148, 163, 184, 0.35);
-    --shadow-soft: 0 18px 45px rgba(2, 6, 23, 0.65);
-    --shadow-card: 0 12px 32px rgba(15, 23, 42, 0.55);
-    --text-muted: #94a3b8;
+    --card-bg: rgba(15, 23, 42, 0.92);
+    --card-border: rgba(148, 163, 184, 0.28);
+    --shadow-soft: 0 22px 60px rgba(2, 6, 23, 0.65);
+    --shadow-card: 0 18px 48px rgba(15, 23, 42, 0.6);
+    --text-muted: #a5b4fc;
     --text-strong: #f8fafc;
-}
+}}
 
-.hero-card {
-    color: #e2e8f0;
-}
+.hero-card {{
+    color: #f1f5ff;
+}}
 
-.metric-highlight {
-    background: rgba(17, 24, 39, 0.92);
-    border-color: rgba(148, 163, 184, 0.35);
-}
-
-.info-banner {
-    background: rgba(56, 189, 248, 0.14);
-    border-color: rgba(56, 189, 248, 0.35);
-    color: #e0f2fe;
-}
-
-.insight-card {
-    background: rgba(30, 41, 59, 0.85);
-    border-color: rgba(148, 163, 184, 0.35);
-    color: #e2e8f0;
-}
-
-.history-card {
+.metric-highlight {{
     background: rgba(17, 24, 39, 0.9);
-    border-color: rgba(148, 163, 184, 0.3);
-    color: #e2e8f0;
-}
+    border-color: rgba(148, 163, 184, 0.32);
+}}
 
-.muted-text {
-    color: #cbd5f5;
-}
+.info-banner {{
+    background: rgba(56, 189, 248, 0.16);
+    border-color: rgba(56, 189, 248, 0.4);
+    color: #e0f2fe;
+}}
 
-.entity-chip {
-    background: rgba(165, 180, 252, 0.18);
-    border-color: rgba(129, 140, 248, 0.4);
+.insight-card {{
+    background: rgba(30, 41, 59, 0.88);
+    border-color: rgba(148, 163, 184, 0.35);
+    color: #f8fafc;
+}}
+
+.history-card {{
+    background: rgba(17, 24, 39, 0.94);
+    border-color: rgba(148, 163, 184, 0.32);
+    color: #f8fafc;
+}}
+
+.muted-text {{
     color: #c7d2fe;
-}
+}}
 
-.entity-chip small {
+.entity-chip {{
+    background: rgba(165, 180, 252, 0.18);
+    border-color: rgba(129, 140, 248, 0.45);
+    color: #cbd5ff;
+}}
+
+.entity-chip small {{
     color: #a5b4fc;
-}
+}}
 
-.summary-pill {
-    background: rgba(30, 64, 175, 0.16);
-    border-color: rgba(96, 165, 250, 0.35);
-    color: #dbeafe;
-}
-
-.summary-pill--severity-high {
-    background: rgba(220, 38, 38, 0.18);
-    border-color: rgba(239, 68, 68, 0.5);
-    color: #fecaca;
-}
-
-.summary-pill--severity-medium {
-    background: rgba(234, 179, 8, 0.24);
-    border-color: rgba(249, 115, 22, 0.45);
-    color: #fde68a;
-}
-
-.summary-pill--severity-low {
-    background: rgba(34, 197, 94, 0.2);
-    border-color: rgba(34, 197, 94, 0.45);
-    color: #bbf7d0;
-}
-
-.summary-pill--urgency-urgent {
-    background: rgba(239, 68, 68, 0.22);
-    border-color: rgba(248, 113, 113, 0.45);
-    color: #fecdd3;
-}
-
-.summary-pill--urgency-concerned {
-    background: rgba(37, 99, 235, 0.2);
+.summary-pill {{
+    background: rgba(30, 64, 175, 0.18);
     border-color: rgba(96, 165, 250, 0.45);
+    color: #e0f2fe;
+}}
+
+.summary-pill--severity-high {{
+    background: rgba(220, 38, 38, 0.22);
+    border-color: rgba(239, 68, 68, 0.55);
+    color: #ffe4e6;
+}}
+
+.summary-pill--severity-medium {{
+    background: rgba(234, 179, 8, 0.3);
+    border-color: rgba(249, 115, 22, 0.5);
+    color: #fef3c7;
+}}
+
+.summary-pill--severity-low {{
+    background: rgba(34, 197, 94, 0.22);
+    border-color: rgba(34, 197, 94, 0.5);
+    color: #bbf7d0;
+}}
+
+.summary-pill--urgency-urgent {{
+    background: rgba(239, 68, 68, 0.24);
+    border-color: rgba(248, 113, 113, 0.5);
+    color: #ffe4e6;
+}}
+
+.summary-pill--urgency-concerned {{
+    background: rgba(37, 99, 235, 0.26);
+    border-color: rgba(59, 130, 246, 0.5);
     color: #dbeafe;
-}
+}}
 
-.summary-pill--urgency-neutral {
-    background: rgba(124, 58, 237, 0.22);
-    border-color: rgba(167, 139, 250, 0.45);
-    color: #e9d5ff;
-}
+.summary-pill--urgency-neutral {{
+    background: rgba(124, 58, 237, 0.26);
+    border-color: rgba(167, 139, 250, 0.5);
+    color: #ede9fe;
+}}
 
-.stDataFrame td, .stDataFrame th {
-    color: #e2e8f0 !important;
-}
+.stDataFrame td, .stDataFrame th {{
+    color: #f8fafc !important;
+}}
 
-.stDataFrame tbody tr:nth-child(even) {
-    background: rgba(15, 23, 42, 0.6) !important;
-}
+.stDataFrame tbody tr:nth-child(even) {{
+    background: rgba(15, 23, 42, 0.55) !important;
+}}
 
-.stDataFrame tbody tr:nth-child(odd) {
-    background: rgba(15, 23, 42, 0.45) !important;
-}
+.stDataFrame tbody tr:nth-child(odd) {{
+    background: rgba(15, 23, 42, 0.4) !important;
+}}
+
+.analysis-inline-ner {{
+    background: rgba(79, 70, 229, 0.18);
+    border: 1px dashed rgba(129, 140, 248, 0.4);
+    color: #e0e7ff;
+}}
+
+{shared_transitions}
 </style>
 """,
             unsafe_allow_html=True,
         )
     else:
         st.markdown(
-            """
+            f"""
 <style>
-html, body, .stApp {
-    background-color: #f1f5f9 !important;
+html, body, .stApp {{
+    background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 38%, #e2e8f0 100%) !important;
     color: #0f172a !important;
-}
+}}
 
-:root {
-    --hero-gradient: linear-gradient(135deg, #0f3276, #2563eb, #38bdf8);
-    --card-bg: #ffffffee;
-    --card-border: #e2e8f0;
-    --shadow-soft: 0 18px 45px rgba(15, 23, 42, 0.12);
-    --shadow-card: 0 12px 32px rgba(15, 23, 42, 0.08);
-    --text-muted: #64748b;
+:root {{
+    --hero-gradient: linear-gradient(135deg, #1e40af, #2563eb, #38bdf8);
+    --card-bg: rgba(255, 255, 255, 0.94);
+    --card-border: rgba(226, 232, 240, 0.8);
+    --shadow-soft: 0 22px 52px rgba(15, 23, 42, 0.12);
+    --shadow-card: 0 18px 46px rgba(15, 23, 42, 0.09);
+    --text-muted: #475569;
     --text-strong: #0f172a;
-}
+}}
 
-.summary-pill {
-    background: rgba(59, 130, 246, 0.12);
-    border-color: rgba(59, 130, 246, 0.3);
+.summary-pill {{
+    background: rgba(59, 130, 246, 0.14);
+    border-color: rgba(59, 130, 246, 0.32);
     color: #1e3a8a;
-}
+}}
 
-.summary-pill--severity-high {
-    background: rgba(239, 68, 68, 0.14);
-    border-color: rgba(239, 68, 68, 0.35);
+.summary-pill--severity-high {{
+    background: rgba(239, 68, 68, 0.18);
+    border-color: rgba(239, 68, 68, 0.38);
     color: #b91c1c;
-}
+}}
 
-.summary-pill--severity-medium {
-    background: rgba(234, 179, 8, 0.18);
-    border-color: rgba(234, 179, 8, 0.35);
+.summary-pill--severity-medium {{
+    background: rgba(234, 179, 8, 0.24);
+    border-color: rgba(234, 179, 8, 0.42);
     color: #92400e;
-}
+}}
 
-.summary-pill--severity-low {
-    background: rgba(22, 163, 74, 0.16);
-    border-color: rgba(16, 185, 129, 0.35);
+.summary-pill--severity-low {{
+    background: rgba(34, 197, 94, 0.2);
+    border-color: rgba(16, 185, 129, 0.42);
     color: #166534;
-}
+}}
 
-.summary-pill--urgency-urgent {
-    background: rgba(220, 38, 38, 0.14);
-    border-color: rgba(248, 113, 113, 0.35);
+.summary-pill--urgency-urgent {{
+    background: rgba(220, 38, 38, 0.18);
+    border-color: rgba(248, 113, 113, 0.38);
     color: #991b1b;
-}
+}}
 
-.summary-pill--urgency-concerned {
-    background: rgba(37, 99, 235, 0.12);
-    border-color: rgba(59, 130, 246, 0.3);
+.summary-pill--urgency-concerned {{
+    background: rgba(59, 130, 246, 0.16);
+    border-color: rgba(96, 165, 250, 0.36);
     color: #1d4ed8;
-}
+}}
 
-.summary-pill--urgency-neutral {
-    background: rgba(124, 58, 237, 0.12);
-    border-color: rgba(124, 58, 237, 0.3);
+.summary-pill--urgency-neutral {{
+    background: rgba(124, 58, 237, 0.18);
+    border-color: rgba(167, 139, 250, 0.38);
     color: #5b21b6;
-}
+}}
+
+.analysis-inline-ner {{
+    background: rgba(191, 219, 254, 0.32);
+    border: 1px dashed rgba(96, 165, 250, 0.42);
+    color: #1e3a8a;
+}}
+
+{shared_transitions}
 </style>
 """,
             unsafe_allow_html=True,
@@ -625,10 +659,18 @@ def _render_analysis_output(analysis: AnalysisResult, compact: bool = False) -> 
 
     token_rows = _token_annotations(analysis.raw_text, analysis.entities)
     if token_rows:
-        st.markdown("#### Token-Level Entities")
-        token_df = pd.DataFrame(token_rows)
-        token_df.columns = ["Token", "Entity"]
-        st.dataframe(token_df, hide_index=True, use_container_width=True)
+        inline_tokens = " ".join(
+            f"{html.escape(item['token'])}{{{html.escape(item['label'])}}}" for item in token_rows
+        )
+        st.markdown(
+            """
+<div class="insight-card">
+  <h4>Token-Level Entities</h4>
+  <div class="analysis-inline-ner">{tokens}</div>
+</div>
+""".format(tokens=inline_tokens),
+            unsafe_allow_html=True,
+        )
 
     highlighted = _highlight_entities(analysis.raw_text, analysis.entities)
     st.markdown(

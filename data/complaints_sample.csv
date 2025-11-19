@@ -3,3 +3,5 @@ complaint_text,issue_type,severity,urgency,location,created_at
 Residents of Indiranagar 9th Main have had no water supply for 24 hours. Overhead tanks are empty and senior citizens are impacted.,LABEL_28,Low,Concerned,,2025-11-18T17:01:58.452918+00:00
 There is a live electric wire hanging near the playground in Koramangala. It is sparking and poses a serious electrocution risk to residents. Please address this immediately.”,LABEL_16,Low,Concerned,Koramangala,2025-11-18T17:21:46.940529+00:00
 A large crack has appeared on the retaining wall near Banashankari bus stand. It looks like it may collapse any moment.,LABEL_21,High,Neutral,,2025-11-19T02:24:05.092357+00:00
+There is a live electric wire hanging near the playground in Koramangala. It is sparking and poses a serious electrocution risk to residents. Please address this immediately.,LABEL_16,High,Concerned,Koramangala,2025-11-19T02:40:14.913111+00:00
+The street light near the 10th Main in Rajajinagar has not been working for the past week. The area becomes too dark at night but there is no immediate danger.,LABEL_6,High,Angry/Urgent,Rajajinagar,2025-11-19T03:01:32.432966+00:00
