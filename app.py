@@ -75,119 +75,178 @@ def _render_global_styles(theme: str) -> None:
             f"""
 <style>
 html, body, .stApp {{
-    background: radial-gradient(circle at top, #1f2937 0%, #0b1120 55%, #060b16 100%) !important;
-    color: #f8fafc !important;
+    background: radial-gradient(circle at top, #1e293b 0%, #0f172a 50%, #020617 100%) !important;
+    color: #f1f5f9 !important;
 }}
 
 :root {{
-    --hero-gradient: linear-gradient(135deg, #1f2937, #1e3a8a, #312e81);
-    --card-bg: rgba(15, 23, 42, 0.92);
-    --card-border: rgba(148, 163, 184, 0.28);
-    --shadow-soft: 0 22px 60px rgba(2, 6, 23, 0.65);
-    --shadow-card: 0 18px 48px rgba(15, 23, 42, 0.6);
-    --text-muted: #a5b4fc;
-    --text-strong: #f8fafc;
+    --hero-gradient: linear-gradient(135deg, #1e3a8a, #2563eb, #3b82f6);
+    --card-bg: rgba(30, 41, 59, 0.95);
+    --card-border: rgba(148, 163, 184, 0.25);
+    --shadow-soft: 0 24px 65px rgba(0, 0, 0, 0.7);
+    --shadow-card: 0 20px 50px rgba(0, 0, 0, 0.6);
+    --text-muted: #94a3b8;
+    --text-strong: #f1f5f9;
+    --text-primary: #e2e8f0;
+    --bg-entity: rgba(79, 70, 229, 0.25);
+    --bg-highlight: rgba(30, 41, 59, 0.95);
+    --border-entity: rgba(129, 140, 248, 0.4);
 }}
 
 .hero-card {{
-    color: #f1f5ff;
+    color: #ffffff;
+}}
+
+.hero-card__eyebrow,
+.hero-card__title,
+.hero-card__subtitle {{
+    color: #ffffff !important;
 }}
 
 .metric-highlight {{
-    background: rgba(17, 24, 39, 0.9);
-    border-color: rgba(148, 163, 184, 0.32);
+    background: rgba(30, 41, 59, 0.95);
+    border-color: rgba(148, 163, 184, 0.3);
+}}
+
+.metric-highlight h3 {{
+    color: #f1f5f9 !important;
+}}
+
+.metric-highlight span {{
+    color: #94a3b8 !important;
 }}
 
 .info-banner {{
-    background: rgba(56, 189, 248, 0.16);
-    border-color: rgba(56, 189, 248, 0.4);
-    color: #e0f2fe;
+    background: rgba(30, 58, 138, 0.35);
+    border-color: rgba(96, 165, 250, 0.4);
+    color: #bfdbfe !important;
 }}
 
 .insight-card {{
-    background: rgba(30, 41, 59, 0.88);
-    border-color: rgba(148, 163, 184, 0.35);
-    color: #f8fafc;
+    background: rgba(30, 41, 59, 0.95);
+    border-color: rgba(148, 163, 184, 0.25);
 }}
 
-.history-card {{
-    background: rgba(17, 24, 39, 0.94);
-    border-color: rgba(148, 163, 184, 0.32);
-    color: #f8fafc;
+.insight-card h4 {{
+    color: #f1f5f9 !important;
 }}
 
-.muted-text {{
-    color: #c7d2fe;
-}}
-
-.entity-chip {{
-    background: rgba(165, 180, 252, 0.18);
-    border-color: rgba(129, 140, 248, 0.45);
-    color: #cbd5ff;
-}}
-
-.entity-chip small {{
-    color: #a5b4fc;
+.insight-card ul li,
+.insight-card p {{
+    color: #cbd5e1 !important;
 }}
 
 .summary-pill {{
-    background: rgba(30, 64, 175, 0.18);
+    background: rgba(59, 130, 246, 0.25);
     border-color: rgba(96, 165, 250, 0.45);
-    color: #e0f2fe;
+    color: #bfdbfe !important;
 }}
 
 .summary-pill--severity-high {{
-    background: rgba(220, 38, 38, 0.22);
-    border-color: rgba(239, 68, 68, 0.55);
-    color: #ffe4e6;
+    background: rgba(239, 68, 68, 0.25);
+    border-color: rgba(248, 113, 113, 0.45);
+    color: #fecaca !important;
 }}
 
 .summary-pill--severity-medium {{
-    background: rgba(234, 179, 8, 0.3);
-    border-color: rgba(249, 115, 22, 0.5);
-    color: #fef3c7;
+    background: rgba(234, 179, 8, 0.25);
+    border-color: rgba(250, 204, 21, 0.45);
+    color: #fef08a !important;
 }}
 
 .summary-pill--severity-low {{
-    background: rgba(34, 197, 94, 0.22);
-    border-color: rgba(34, 197, 94, 0.5);
-    color: #bbf7d0;
+    background: rgba(34, 197, 94, 0.25);
+    border-color: rgba(74, 222, 128, 0.45);
+    color: #bbf7d0 !important;
 }}
 
 .summary-pill--urgency-urgent {{
-    background: rgba(239, 68, 68, 0.24);
-    border-color: rgba(248, 113, 113, 0.5);
-    color: #ffe4e6;
+    background: rgba(220, 38, 38, 0.25);
+    border-color: rgba(248, 113, 113, 0.45);
+    color: #fecaca !important;
 }}
 
 .summary-pill--urgency-concerned {{
-    background: rgba(37, 99, 235, 0.26);
-    border-color: rgba(59, 130, 246, 0.5);
-    color: #dbeafe;
+    background: rgba(59, 130, 246, 0.25);
+    border-color: rgba(96, 165, 250, 0.45);
+    color: #bfdbfe !important;
 }}
 
 .summary-pill--urgency-neutral {{
-    background: rgba(124, 58, 237, 0.26);
-    border-color: rgba(167, 139, 250, 0.5);
-    color: #ede9fe;
+    background: rgba(124, 58, 237, 0.25);
+    border-color: rgba(167, 139, 250, 0.45);
+    color: #ddd6fe !important;
 }}
 
-.stDataFrame td, .stDataFrame th {{
-    color: #f8fafc !important;
+.badge--severity-high {{
+    background: rgba(239, 68, 68, 0.25);
+    border-color: rgba(248, 113, 113, 0.4);
+    color: #fca5a5 !important;
 }}
 
-.stDataFrame tbody tr:nth-child(even) {{
-    background: rgba(15, 23, 42, 0.55) !important;
+.badge--severity-medium {{
+    background: rgba(234, 179, 8, 0.25);
+    border-color: rgba(250, 204, 21, 0.4);
+    color: #fde047 !important;
 }}
 
-.stDataFrame tbody tr:nth-child(odd) {{
-    background: rgba(15, 23, 42, 0.4) !important;
+.badge--severity-low {{
+    background: rgba(34, 197, 94, 0.25);
+    border-color: rgba(74, 222, 128, 0.4);
+    color: #86efac !important;
+}}
+
+.badge--urgency-urgent {{
+    background: rgba(220, 38, 38, 0.25);
+    border-color: rgba(248, 113, 113, 0.4);
+    color: #fca5a5 !important;
+}}
+
+.badge--urgency-concerned {{
+    background: rgba(59, 130, 246, 0.25);
+    border-color: rgba(96, 165, 250, 0.4);
+    color: #93c5fd !important;
+}}
+
+.badge--urgency-neutral {{
+    background: rgba(124, 58, 237, 0.25);
+    border-color: rgba(167, 139, 250, 0.4);
+    color: #c4b5fd !important;
+}}
+
+.entity-chip {{
+    background: rgba(79, 70, 229, 0.25);
+    border-color: rgba(129, 140, 248, 0.4);
+    color: #c7d2fe !important;
+}}
+
+.entity-chip small {{
+    color: #a5b4fc !important;
+}}
+
+.history-card {{
+    background: rgba(30, 41, 59, 0.95);
+    border-color: rgba(148, 163, 184, 0.25);
+}}
+
+.history-card__headline {{
+    color: #f1f5f9 !important;
+}}
+
+.muted-text {{
+    color: #94a3b8 !important;
 }}
 
 .analysis-inline-ner {{
-    background: rgba(79, 70, 229, 0.18);
-    border: 1px dashed rgba(129, 140, 248, 0.4);
-    color: #e0e7ff;
+    background: rgba(30, 58, 138, 0.35);
+    border: 1px dashed rgba(96, 165, 250, 0.45);
+    color: #bfdbfe !important;
+}}
+
+.download-pill {{
+    border-color: rgba(96, 165, 250, 0.5);
+    background: rgba(59, 130, 246, 0.25);
+    color: #93c5fd !important;
 }}
 
 {shared_transitions}
@@ -200,66 +259,178 @@ html, body, .stApp {{
             f"""
 <style>
 html, body, .stApp {{
-    background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 38%, #e2e8f0 100%) !important;
+    background: linear-gradient(180deg, #f8fafc 0%, #eff6ff 40%, #e0e7ff 100%) !important;
     color: #0f172a !important;
 }}
 
 :root {{
-    --hero-gradient: linear-gradient(135deg, #1e40af, #2563eb, #38bdf8);
-    --card-bg: rgba(255, 255, 255, 0.94);
-    --card-border: rgba(226, 232, 240, 0.8);
-    --shadow-soft: 0 22px 52px rgba(15, 23, 42, 0.12);
-    --shadow-card: 0 18px 46px rgba(15, 23, 42, 0.09);
+    --hero-gradient: linear-gradient(135deg, #1e40af, #2563eb, #3b82f6);
+    --card-bg: rgba(255, 255, 255, 0.96);
+    --card-border: rgba(226, 232, 240, 0.9);
+    --shadow-soft: 0 24px 55px rgba(15, 23, 42, 0.12);
+    --shadow-card: 0 20px 48px rgba(15, 23, 42, 0.09);
     --text-muted: #475569;
     --text-strong: #0f172a;
+    --text-primary: #1e293b;
+    --bg-entity: #eef2ff;
+    --bg-highlight: #ffffff;
+    --border-entity: rgba(79, 70, 229, 0.35);
+}}
+
+.hero-card {{
+    color: #ffffff;
+}}
+
+.hero-card__eyebrow,
+.hero-card__title,
+.hero-card__subtitle {{
+    color: #ffffff !important;
+}}
+
+.metric-highlight {{
+    background: rgba(255, 255, 255, 0.96);
+    border-color: rgba(226, 232, 240, 0.9);
+}}
+
+.metric-highlight h3 {{
+    color: #0f172a !important;
+}}
+
+.metric-highlight span {{
+    color: #475569 !important;
+}}
+
+.info-banner {{
+    background: #eff6ff;
+    border-color: #bfdbfe;
+    color: #1e40af !important;
+}}
+
+.insight-card {{
+    background: rgba(255, 255, 255, 0.96);
+    border-color: rgba(226, 232, 240, 0.9);
+}}
+
+.insight-card h4 {{
+    color: #0f172a !important;
+}}
+
+.insight-card ul li,
+.insight-card p {{
+    color: #334155 !important;
 }}
 
 .summary-pill {{
-    background: rgba(59, 130, 246, 0.14);
-    border-color: rgba(59, 130, 246, 0.32);
-    color: #1e3a8a;
+    background: rgba(59, 130, 246, 0.15);
+    border-color: rgba(59, 130, 246, 0.35);
+    color: #1e40af !important;
 }}
 
 .summary-pill--severity-high {{
     background: rgba(239, 68, 68, 0.18);
-    border-color: rgba(239, 68, 68, 0.38);
-    color: #b91c1c;
+    border-color: rgba(239, 68, 68, 0.4);
+    color: #b91c1c !important;
 }}
 
 .summary-pill--severity-medium {{
-    background: rgba(234, 179, 8, 0.24);
-    border-color: rgba(234, 179, 8, 0.42);
-    color: #92400e;
+    background: rgba(234, 179, 8, 0.25);
+    border-color: rgba(234, 179, 8, 0.45);
+    color: #92400e !important;
 }}
 
 .summary-pill--severity-low {{
-    background: rgba(34, 197, 94, 0.2);
-    border-color: rgba(16, 185, 129, 0.42);
-    color: #166534;
+    background: rgba(34, 197, 94, 0.20);
+    border-color: rgba(34, 197, 94, 0.45);
+    color: #15803d !important;
 }}
 
 .summary-pill--urgency-urgent {{
     background: rgba(220, 38, 38, 0.18);
-    border-color: rgba(248, 113, 113, 0.38);
-    color: #991b1b;
+    border-color: rgba(220, 38, 38, 0.4);
+    color: #991b1b !important;
 }}
 
 .summary-pill--urgency-concerned {{
-    background: rgba(59, 130, 246, 0.16);
-    border-color: rgba(96, 165, 250, 0.36);
-    color: #1d4ed8;
+    background: rgba(59, 130, 246, 0.18);
+    border-color: rgba(59, 130, 246, 0.38);
+    color: #1e40af !important;
 }}
 
 .summary-pill--urgency-neutral {{
+    background: rgba(124, 58, 237, 0.20);
+    border-color: rgba(124, 58, 237, 0.4);
+    color: #6b21a8 !important;
+}}
+
+.badge--severity-high {{
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #b91c1c !important;
+}}
+
+.badge--severity-medium {{
+    background: rgba(234, 179, 8, 0.20);
+    border-color: rgba(234, 179, 8, 0.35);
+    color: #92400e !important;
+}}
+
+.badge--severity-low {{
+    background: rgba(34, 197, 94, 0.18);
+    border-color: rgba(34, 197, 94, 0.35);
+    color: #15803d !important;
+}}
+
+.badge--urgency-urgent {{
+    background: rgba(220, 38, 38, 0.15);
+    border-color: rgba(220, 38, 38, 0.3);
+    color: #991b1b !important;
+}}
+
+.badge--urgency-concerned {{
+    background: rgba(59, 130, 246, 0.15);
+    border-color: rgba(59, 130, 246, 0.3);
+    color: #1e40af !important;
+}}
+
+.badge--urgency-neutral {{
     background: rgba(124, 58, 237, 0.18);
-    border-color: rgba(167, 139, 250, 0.38);
-    color: #5b21b6;
+    border-color: rgba(124, 58, 237, 0.35);
+    color: #6b21a8 !important;
+}}
+
+.entity-chip {{
+    background: #eef2ff;
+    border-color: rgba(79, 70, 229, 0.35);
+    color: #3730a3 !important;
+}}
+
+.entity-chip small {{
+    color: #6366f1 !important;
+}}
+
+.history-card {{
+    background: rgba(255, 255, 255, 0.96);
+    border-color: rgba(226, 232, 240, 0.9);
+}}
+
+.history-card__headline {{
+    color: #0f172a !important;
+}}
+
+.muted-text {{
+    color: #475569 !important;
 }}
 
 .analysis-inline-ner {{
-    background: rgba(191, 219, 254, 0.32);
-    border: 1px dashed rgba(96, 165, 250, 0.42);
-    color: #1e3a8a;
+    background: rgba(191, 219, 254, 0.35);
+    border: 1px dashed rgba(96, 165, 250, 0.5);
+    color: #1e40af !important;
+}}
+
+.download-pill {{
+    border-color: #2563eb;
+    background: rgba(37, 99, 235, 0.08);
+    color: #1e40af !important;
 }}
 
 {shared_transitions}
@@ -383,13 +554,16 @@ def _init_session_state() -> None:
 def _highlight_entities(text: str, entities: List[Dict[str, str]]) -> str:
     if not entities:
         return html.escape(text)
+    
+    # Use theme-aware colors with good contrast
     color_map = {
-        "LOCATION": "#ffeb3b",
-        "LOC": "#ffeb3b",
-        "GPE": "#ffeb3b",
-        "ORG": "#b3e5fc",
-        "PROBLEM": "#ffcdd2",
+        "LOCATION": "rgba(253, 224, 71, 0.4)",  # Yellow with transparency
+        "LOC": "rgba(253, 224, 71, 0.4)",
+        "GPE": "rgba(253, 224, 71, 0.4)",
+        "ORG": "rgba(96, 165, 250, 0.35)",  # Blue with transparency
+        "PROBLEM": "rgba(248, 113, 113, 0.35)",  # Red with transparency
     }
+    
     result: List[str] = []
     cursor = 0
     sorted_entities = sorted(entities, key=lambda e: e.get("start", 0))
@@ -401,11 +575,12 @@ def _highlight_entities(text: str, entities: List[Dict[str, str]]) -> str:
         label = ent.get("label", "")
         if start > cursor:
             result.append(html.escape(text[cursor:start]))
-        color = color_map.get(label.upper(), "#d1c4e9")
+        color = color_map.get(label.upper(), "rgba(167, 139, 250, 0.35)")
         ent_text = html.escape(text[start:end])
         span = (
-            f"<span style='background-color:{color}; padding:0 4px; border-radius:4px;'>"
-            f"{ent_text} <small>({html.escape(label)})</small></span>"
+            f"<span style='background-color:{color}; padding:2px 6px; border-radius:4px; "
+            f"font-weight:600; border:1px solid rgba(0,0,0,0.1);'>"
+            f"{ent_text} <small style='opacity:0.8;'>({html.escape(label)})</small></span>"
         )
         result.append(span)
         cursor = end
@@ -444,10 +619,9 @@ def _render_sidebar(summary: Dict[str, Any], components: Dict[str, str], mode: s
     )
     st.sidebar.markdown(
         """
-- Fine-tuned BERT classifier
+- Multi-Task BERT (31 categories, severity, urgency)
 - spaCy NER for civic entities
-- SVM-based severity scoring
-- MiniLM urgency analyser
+- Real-time complaint classification
 """
     )
 
@@ -487,7 +661,7 @@ def _render_header(metadata: Dict[str, Any], summary: Dict[str, Any]) -> None:
 <div class="hero-card">
   <div class="hero-card__eyebrow">Pipeline status</div>
   <div class="hero-card__title">Smart Infrastructure Complaint Intelligence</div>
-  <p class="hero-card__subtitle">City-scale complaint intelligence with BERT classification, spaCy NER, SVM severity and MiniLM urgency in a single Streamlit control tower.</p>
+  <p class="hero-card__subtitle">City-scale complaint intelligence powered by Multi-Task BERT for category, severity, and urgency prediction with spaCy NER in a unified Streamlit dashboard.</p>
   <div class="hero-card__status">
     <span class="status-tag {badge_class}">Mode: {badge}</span>{component_badges}
   </div>
@@ -548,10 +722,10 @@ def _handle_analysis_page() -> None:
 <div class="insight-card">
     <h4>What this AI does best</h4>
     <ul>
-        <li>Ranks complaint category with a fine-tuned BERT classifier and civic keyword heuristics.</li>
-        <li>Flags severity using an SVM model boosted by urgency keywords for fail-safe prioritisation.</li>
-        <li>Infers citizen sentiment and urgency cues with a MiniLM transformer.</li>
-        <li>Extracts locations, assets, and problem terms with spaCy NER for GIS routing.</li>
+        <li>Classifies complaints into 31 infrastructure categories using Multi-Task BERT with civic keyword heuristics.</li>
+        <li>Predicts severity levels (LOW, MEDIUM, HIGH) with context-aware deep learning.</li>
+        <li>Evaluates urgency (NEUTRAL, CONCERNED, URGENT) through multi-head attention mechanisms.</li>
+        <li>Extracts locations, assets, and problem terms with spaCy NER for precise GIS routing.</li>
     </ul>
 </div>
 """,
@@ -654,9 +828,9 @@ def _render_analysis_output(analysis: AnalysisResult, compact: bool = False) -> 
 """.format(
                 issue=html.escape(analysis.issue_type),
                 severity_cls=severity_class.replace("summary-pill", "badge"),
-                severity=html.escape(analysis.severity),
+                severity=html.escape(analysis.severity.title()),
                 urgency_cls=urgency_class.replace("summary-pill", "badge"),
-                urgency=html.escape(analysis.urgency),
+                urgency=html.escape(analysis.urgency.title()),
                 preview=html.escape(preview),
             ),
             unsafe_allow_html=True,
@@ -676,9 +850,9 @@ def _render_analysis_output(analysis: AnalysisResult, compact: bool = False) -> 
 """.format(
             issue=html.escape(analysis.issue_type),
             severity_cls=severity_class,
-            severity=html.escape(analysis.severity),
+            severity=html.escape(analysis.severity.title()),
             urgency_cls=urgency_class,
-            urgency=html.escape(analysis.urgency),
+            urgency=html.escape(analysis.urgency.title()),
         ),
         unsafe_allow_html=True,
     )
@@ -715,7 +889,7 @@ def _render_analysis_output(analysis: AnalysisResult, compact: bool = False) -> 
         """
 <div class="insight-card">
   <h4>Complaint context</h4>
-  <div style="background:#ffffff; border-radius:10px; padding:14px; border:1px solid #e2e8f0;">{text}</div>
+  <div style="background:var(--bg-highlight); border-radius:10px; padding:16px; border:1px solid var(--card-border); color:var(--text-primary);">{text}</div>
 </div>
 """.format(text=highlighted),
         unsafe_allow_html=True,
@@ -776,18 +950,18 @@ def _render_about_page() -> None:
 Deliver actionable intelligence on civic infrastructure complaints in real time.
 
 **Methodology**
-1. Preprocess incoming complaint text.
-2. Classify issue category with fine-tuned BERT.
-3. Extract entities using spaCy NER (location, problem terms, organizations).
-4. Predict severity via an SVM trained on contextual embeddings and lexical cues.
-5. Evaluate urgency sentiment with DistilBERT.
-6. Persist results for analytics and visualization.
+1. Preprocess incoming complaint text with normalization and cleaning.
+2. Classify issue category, severity, and urgency simultaneously using Multi-Task BERT.
+3. Extract entities using spaCy NER (locations, problem terms, organizations).
+4. Apply rule-based enhancements for edge cases and keyword matching.
+5. Persist results to CSV for analytics and visualization.
+6. Generate real-time insights and visualizations.
 
 **Technologies**
 - Streamlit frontend
-- Hugging Face Transformers (BERT, DistilBERT)
-- spaCy NER
-- Scikit-learn SVM
+- Multi-Task BERT (PyTorch + Transformers)
+- spaCy NER (en_core_web_sm)
+- Pandas, NumPy
 - Plotly, Altair, WordCloud
 
 **Model Training**

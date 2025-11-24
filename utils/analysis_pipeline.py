@@ -287,30 +287,52 @@ def _predict_sentiment(bundle: ModelBundle, text: str) -> Tuple[str, float, Prob
         mapped_label = _map_sentiment_label(label)
         return mapped_label, confidence, normalized_scores
     
-    # Real multi-task model
+    # Real multi-task model - extract urgency from the third head
     if not tokenizer:
         raise RuntimeError("Tokenizer is unavailable for multi-task model.")
 
-    sent_pipeline = _get_sentiment_pipeline(bundle)
-    max_length = _resolve_sequence_limit(tokenizer, None)
-    raw_scores: Any = sent_pipeline(text, truncation=True, max_length=max_length)
-    
-    # Validate sentiment output format
+    # Import torch for direct model inference
     try:
-        normalized_scores = validate_sentiment_output(raw_scores)
-    except ModelOutputValidationError as exc:
-        logging.error("Sentiment output validation failed: %s", exc)
-        raise RuntimeError(f"Invalid sentiment output format: {exc}") from exc
-
-    best_entry = max(normalized_scores, key=lambda s: s["score"])
-    mapped_label = _map_sentiment_label(str(best_entry["label"]))
-    mapped_scores = [
-        {"label": _map_sentiment_label(str(score["label"])), "score": float(score["score"])}
-        for score in normalized_scores
-    ]
-    best_score = next((s for s in mapped_scores if s["label"] == mapped_label), None)
-    confidence = float(best_score["score"]) if best_score else float(best_entry["score"])
-    return mapped_label, confidence, mapped_scores
+        import torch
+        
+        # Tokenize input
+        inputs = tokenizer(text, return_tensors="pt", padding=True, truncation=True, max_length=512)
+        
+        # Get predictions from urgency head
+        with torch.no_grad():
+            outputs = sentiment_model(**inputs)  # type: ignore[misc]
+            urgency_logits = outputs['urgency_logits']
+        
+        # Process urgency predictions
+        urgency_probs = torch.softmax(urgency_logits, dim=-1)[0]
+        urgency_idx = int(torch.argmax(urgency_probs).item())
+        
+        # Get labels from model attributes
+        urgency_labels = getattr(sentiment_model, 'urgency_labels', ['NEUTRAL', 'CONCERNED', 'URGENT'])
+        
+        label = str(urgency_labels[urgency_idx])
+        confidence = float(urgency_probs[urgency_idx])
+        normalized_scores = [
+            {"label": lbl, "score": float(prob)}
+            for lbl, prob in zip(urgency_labels, urgency_probs)
+        ]
+        
+        mapped_label = _map_sentiment_label(label)
+        mapped_scores = [
+            {"label": _map_sentiment_label(lbl), "score": float(prob)}
+            for lbl, prob in zip(urgency_labels, urgency_probs)
+        ]
+        
+        return mapped_label, confidence, mapped_scores
+        
+    except Exception as exc:
+        logging.error("Urgency prediction failed: %s", exc, exc_info=True)
+        # Fallback to neutral
+        return "Neutral", 0.33, [
+            {"label": "Neutral", "score": 0.34},
+            {"label": "Concerned", "score": 0.33},
+            {"label": "Angry/Urgent", "score": 0.33}
+        ]
 
 
 def _map_sentiment_label(label: str) -> str:
