@@ -10,10 +10,8 @@ from config import DATA_DIR, MODEL_DIR
 class TrainingPaths:
     data_csv: Path = DATA_DIR / "complaints_sample.csv"
     model_dir: Path = MODEL_DIR
-    classifier_dir: Path = MODEL_DIR / "bert_classifier"
+    multi_task_classifier_path: Path = MODEL_DIR / "multi_task_classifier.pt"
     tokenizer_dir: Path = MODEL_DIR / "tokenizer"
-    severity_path: Path = MODEL_DIR / "severity_svm.pkl"
-    sentiment_dir: Path = MODEL_DIR / "distilbert_urgency"
     spacy_model_dir: Path = MODEL_DIR / "spacy_model"
 
 

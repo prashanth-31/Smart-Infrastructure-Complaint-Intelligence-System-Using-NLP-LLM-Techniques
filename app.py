@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import html
 import re
+import warnings
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -9,7 +10,7 @@ import pandas as pd
 import streamlit as st
 
 from config import DEFAULT_DATASET
-from models.pipeline_loader import load_model_bundle
+from models.pipeline_loader import StubModelWarning, load_model_bundle
 from utils.analysis_pipeline import AnalysisResult, analyze_complaint
 from utils.data_store import append_analysis, load_dataset
 from utils.preprocessing import build_feature_row
@@ -29,7 +30,14 @@ st.set_page_config(
     layout="wide",
 )
 
-bundle = load_model_bundle(enable_stubs=True, allow_stub_for={"severity"})
+# Capture stub warnings during model loading
+with warnings.catch_warnings(record=True) as w:
+    warnings.simplefilter("always", StubModelWarning)
+    bundle = load_model_bundle(
+        enable_stubs=True,  # Set to True to use stub models when real models fail to load
+    )
+    # Store warnings for display in UI
+    stub_warnings = [warning for warning in w if issubclass(warning.category, StubModelWarning)]
 
 APP_ROOT = Path(__file__).resolve().parent
 
@@ -331,12 +339,15 @@ def _generate_recommendations(analysis: AnalysisResult) -> List[str]:
 def _entity_badges(entities: List[Dict[str, Any]]) -> str:
     if not entities:
         return ""
-    chips = []
+    parts = []
     for ent in entities:
-        text = html.escape(str(ent.get("text", "")))
-        label = html.escape(str(ent.get("label", "")))
-        chips.append(f"<span class='entity-chip'><span>{text}</span><small>{label}</small></span>")
-    return "".join(chips)
+        text = html.escape(str(ent.get("text", ""))).strip()
+        label = html.escape(str(ent.get("label", ""))).strip()
+        if not text:
+            continue
+        formatted = f"{text}({label})" if label else text
+        parts.append(formatted)
+    return ", ".join(parts)
 
 
 def _token_annotations(text: str, entities: List[Dict[str, Any]]) -> List[Dict[str, str]]:
@@ -510,7 +521,19 @@ def _render_header(metadata: Dict[str, Any], summary: Dict[str, Any]) -> None:
         )
 
     if mode != "production":
-        st.warning("Pipeline currently relies on one or more fallback stubs. Upload model artefacts to enable full fidelity.")
+        # Show detailed stub warning if components are using stubs
+        stub_components = bundle.get_stub_components()
+        if stub_components:
+            st.error(
+                f"⚠️ **WARNING: STUB MODELS IN USE**\\n\\n"
+                f"The following components are NOT providing ML-based predictions:\\n"
+                f"- {', '.join(stub_components)}\\n\\n"
+                f"**Impact:** Predictions will be random or heuristic-based.\\n"
+                f"**Action:** Check model files and loading errors in logs.\\n\\n"
+                f"**DO NOT use in production without fixing model loading issues.**"
+            )
+        else:
+            st.warning("Pipeline mode indicates non-production configuration.")
 
 
 def _handle_analysis_page() -> None:
@@ -645,7 +668,7 @@ def _render_analysis_output(analysis: AnalysisResult, compact: bool = False) -> 
 <div class="insight-card">
   <h4>Classification summary</h4>
   <div class="summary-pill-row">
-    <span class="summary-pill">Issue: {issue}</span>
+        <span class="summary-pill">Category: {issue}</span>
     <span class="summary-pill {severity_cls}">Severity: {severity}</span>
     <span class="summary-pill {urgency_cls}">Urgency: {urgency}</span>
   </div>
@@ -659,35 +682,6 @@ def _render_analysis_output(analysis: AnalysisResult, compact: bool = False) -> 
         ),
         unsafe_allow_html=True,
     )
-
-    issue_meta = analysis.metadata or {}
-    issue_model_label = issue_meta.get("issue_model_label")
-    issue_rationale = issue_meta.get("issue_label_rationale")
-    issue_probabilities = issue_meta.get("issue_probabilities", [])
-    if issue_model_label or issue_probabilities:
-        probability_items = ""
-        for entry in issue_probabilities[:5]:
-            raw_label = html.escape(str(entry.get("label", "")))
-            pct = float(entry.get("score", 0.0)) * 100.0
-            probability_items += f"<li><strong>{raw_label}</strong>: {pct:.1f}%</li>"
-        if not probability_items:
-            probability_items = "<li>No probability breakdown available.</li>"
-        rationale_html = html.escape(str(issue_rationale)) if issue_rationale else "Model-driven classification."
-        st.markdown(
-            """
-<div class="insight-card">
-  <h4>Classifier diagnostics</h4>
-  <p class="muted-text">Base model label: <strong>{model_label}</strong></p>
-  <p class="muted-text">{rationale}</p>
-  <ul>{items}</ul>
-</div>
-""".format(
-                model_label=html.escape(str(issue_model_label or "Unknown")),
-                rationale=rationale_html,
-                items=probability_items,
-            ),
-            unsafe_allow_html=True,
-        )
 
     entity_html = _entity_badges(analysis.entities)
     if entity_html:
@@ -704,7 +698,7 @@ def _render_analysis_output(analysis: AnalysisResult, compact: bool = False) -> 
     token_rows = _token_annotations(analysis.raw_text, analysis.entities)
     if token_rows:
         inline_tokens = " ".join(
-            f"{html.escape(item['token'])}{{{html.escape(item['label'])}}}" for item in token_rows
+            f"{html.escape(item['token'])}({html.escape(item['label'])})" for item in token_rows
         )
         st.markdown(
             """

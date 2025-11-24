@@ -16,11 +16,16 @@ streamlit run app.py
 
 Ensure the `models/` directory contains the fine-tuned weights:
 
-| Component | Expected Artefact |
-|-----------|------------------|
-| Classifier | `models/bert_classifier_fast (1).pt` + tokenizer files |
-| NER | `models/spacy_model/en_core_web_sm/en_core_web_sm-3.8.0` |
-| Urgency | `models/minilm_urgency_fast/model.pt` (MiniLM weights) |
-| Severity | `models/severity_svm_fast.pkl` |
+| Component | Expected Artefact | Status Check |
+|-----------|------------------|-------------|
+| Multi-Task Classifier | `models/multi_task_classifier.pt` | Required (handles category, severity, urgency) |
+| Tokenizer | `models/tokenizer/` (vocab.txt, config files) | Required |
+| NER | `models/spacy_model/en_core_web_sm/en_core_web_sm-3.8.0/` | Required |
+
+**Verify Installation:**
+```powershell
+# Check all required model files exist
+python -c "from config import MODEL_FILES; import sys; missing = [k for k, v in MODEL_FILES.items() if not v.exists()]; print('Missing models:', missing) if missing else print('✓ All models present'); sys.exit(1 if missing else 0)"
+```
 
 With all components available, the app presents live diagnostics explaining each decision and how the stack prioritises the city-wide complaint queue.

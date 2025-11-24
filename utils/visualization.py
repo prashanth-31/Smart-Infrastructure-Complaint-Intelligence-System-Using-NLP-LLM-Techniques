@@ -9,11 +9,32 @@ import plotly.express as px
 import plotly.graph_objects as go
 from wordcloud import WordCloud
 
+from utils.analysis_pipeline import map_model_label_to_category
+
+
+def _normalise_issue_categories(series: pd.Series) -> pd.Series:
+    if series is None or series.empty:
+        return pd.Series(dtype=str)
+    normalized = series.fillna("").astype(str)
+    return normalized.map(map_model_label_to_category)
+
 
 def issue_type_bar(df: pd.DataFrame) -> go.Figure:
-    counts = df["issue_type"].value_counts().reset_index()
+    figure = go.Figure()
+    if "issue_type" not in df.columns or df["issue_type"].dropna().empty:
+        return figure
+    categories = _normalise_issue_categories(df["issue_type"])
+    if categories.empty:
+        return figure
+    counts = categories.value_counts().reset_index()
     counts.columns = ["Issue Type", "Count"]
-    figure = px.bar(counts, x="Issue Type", y="Count", color="Issue Type", title="Complaint Distribution by Issue Type")
+    figure = px.bar(
+        counts,
+        x="Issue Type",
+        y="Count",
+        color="Issue Type",
+        title="Complaint Distribution by Issue Type",
+    )
     return figure
 
 

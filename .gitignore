@@ -1,1 +1,4 @@
-models/
+models/tokenizer
+models/spacy_model
+models/__pycache__
+models/multi_task_classifier.pt
