@@ -401,8 +401,23 @@ def _load_multi_task_classifier(model_path: Path, tokenizer_path: Path) -> Tuple
         
         # Store label mappings as attributes (not part of nn.Module)
         category_labels = checkpoint.get('category_labels', [])
-        severity_labels = checkpoint.get('severity_labels', ['Low', 'Medium', 'High'])
-        urgency_labels = checkpoint.get('urgency_labels', ['Neutral', 'Concerned', 'Angry/Urgent'])
+        
+        # If category_labels not in checkpoint, use the standard 31 categories from training data
+        if not category_labels and num_categories == 31:
+            category_labels = [
+                "Advertisement", "BBMP Election Branch", "CORONA COVID19", "Call Center",
+                "E khata / Khata services", "Education", "Electrical", "Estate",
+                "Forest", "Health Dept", "Indira Canteen", "Information Technology",
+                "Lakes", "Markets", "Optical Fiber Cables (OFC)", "Others",
+                "Parks and Play grounds", "Plastic", "Projects Central", "Property Tax services",
+                "Revenue Department", "Road Infrastructure", "Road Maintenance(Engg)", "Sanitation",
+                "Solid Waste (Garbage) Related", "Storm  Water Drain(SWD)", "Town Planning",
+                "Traffic Engineer Cell (TEC)", "Water Crisis", "Welfare Schemes", "veterinary"
+            ]
+            logging.info(f"Using standard 31 category labels from training data")
+        
+        severity_labels = checkpoint.get('severity_labels', ['LOW', 'MEDIUM', 'HIGH'])
+        urgency_labels = checkpoint.get('urgency_labels', ['NEUTRAL', 'CONCERNED', 'URGENT'])
         
         setattr(model, 'category_labels', category_labels)
         setattr(model, 'severity_labels', severity_labels)
@@ -417,7 +432,7 @@ def _load_multi_task_classifier(model_path: Path, tokenizer_path: Path) -> Tuple
             model.config.id2label = {i: label for i, label in enumerate(category_labels)}
             model.config.label2id = {label: i for i, label in enumerate(category_labels)}
         else:
-            # Generate default labels if not provided
+            # Fallback to generic labels if still not available
             model.config.id2label = {i: f"LABEL_{i}" for i in range(num_categories)}
             model.config.label2id = {f"LABEL_{i}": i for i in range(num_categories)}
         

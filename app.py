@@ -603,7 +603,7 @@ def _handle_analysis_page() -> None:
                     "issue_type": analysis.issue_type,
                     "severity": analysis.severity,
                     "urgency": analysis.urgency,
-                    "location": next((e["text"] for e in analysis.entities if e.get("label", "").upper() in ("LOC", "GPE", "LOCATION")), ""),
+                    "location": analysis.location,
                 }
             )
             row["created_at"] = pd.Timestamp.utcnow().isoformat()

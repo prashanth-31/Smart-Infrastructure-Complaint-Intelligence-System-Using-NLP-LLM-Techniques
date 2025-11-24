@@ -31,6 +31,7 @@ class AnalysisResult:
     urgency: str
     urgency_confidence: float
     entities: List[Dict[str, Any]]
+    location: str
     cleaned_text: str
     raw_text: str
     metadata: Dict[str, Any]
@@ -497,6 +498,7 @@ def analyze_complaint(text: str, bundle: ModelBundle) -> AnalysisResult:
         urgency=urgency_label,
         urgency_confidence=urgency_score,
         entities=entities,
+        location=location_text,
         cleaned_text=cleaned,
         raw_text=text,
         metadata=metadata,
