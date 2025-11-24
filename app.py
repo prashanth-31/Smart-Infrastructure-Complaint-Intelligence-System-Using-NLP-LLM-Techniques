@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
 import html
 import re
 import warnings
@@ -457,10 +458,10 @@ def _calculate_summary(df: pd.DataFrame, components: Dict[str, str]) -> Dict[str
 
     working = df.copy()
     if "created_at" in working.columns:
-        working["_created_at_dt"] = pd.to_datetime(working["created_at"], errors="coerce")
+        working["_created_at_dt"] = pd.to_datetime(working["created_at"], errors="coerce", utc=True)
         latest = working["_created_at_dt"].max()
         summary["last_update"] = latest
-        today_start = pd.Timestamp.utcnow().normalize()
+        today_start = pd.Timestamp(datetime.now(timezone.utc).date(), tz="UTC")
         summary["today_count"] = int((working["_created_at_dt"] >= today_start).sum())
 
     if "issue_type" in working.columns and not working["issue_type"].dropna().empty:
@@ -773,14 +774,14 @@ def _handle_analysis_page() -> None:
         if persist:
             row = build_feature_row(
                 {
+                    "created_at": pd.Timestamp.utcnow().isoformat(),
                     "text": analysis.raw_text,
                     "issue_type": analysis.issue_type,
-                    "severity": analysis.severity,
-                    "urgency": analysis.urgency,
+                    "severity": analysis.severity.title(),
+                    "urgency": analysis.urgency.title(),
                     "location": analysis.location,
                 }
             )
-            row["created_at"] = pd.Timestamp.utcnow().isoformat()
             append_analysis(row, DEFAULT_DATASET)
             _load_dataset_cached.clear()
             st.session_state.dataset = pd.concat(

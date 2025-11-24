@@ -96,16 +96,6 @@ class ModelBundle:
         return self.multi_task_model
     
     @property
-    def sentiment(self):
-        """Stub property - sentiment/urgency is now part of multi_task_model."""
-        return self.multi_task_model
-    
-    @property
-    def sentiment_tokenizer(self):
-        """Alias for tokenizer for backward compatibility."""
-        return self.tokenizer
-    
-    @property
     def severity_vectorizer(self):
         """Not needed for multi-task model."""
         return None
@@ -352,7 +342,12 @@ def _load_multi_task_classifier(model_path: Path, tokenizer_path: Path) -> Tuple
         class MultiTaskComplaintClassifier(nn.Module):
             def __init__(self, base_model_name, num_categories, num_severity, num_urgency):
                 super().__init__()
-                self.bert = AutoModel.from_pretrained(base_model_name)
+                # Try loading from cache first, then download if needed
+                try:
+                    self.bert = AutoModel.from_pretrained(base_model_name, local_files_only=False)
+                except Exception:
+                    # Fallback to loading without local_files_only restriction
+                    self.bert = AutoModel.from_pretrained(base_model_name)
                 self.category_head = nn.Linear(768, num_categories)
                 self.severity_head = nn.Linear(768, num_severity)
                 self.urgency_head = nn.Linear(768, num_urgency)
@@ -396,7 +391,16 @@ def _load_multi_task_classifier(model_path: Path, tokenizer_path: Path) -> Tuple
             logging.info(f"Inferred num_urgency={num_urgency} from state_dict")
         
         model = MultiTaskComplaintClassifier(base_model_name, num_categories, num_severity, num_urgency)
-        model.load_state_dict(state_dict, strict=False)
+        
+        # Load state dict with strict=False to handle missing keys
+        # First move model to CPU to avoid meta tensor issues
+        model = model.cpu()
+        missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=False)
+        if missing_keys:
+            logging.warning(f"Missing keys when loading state_dict: {missing_keys}")
+        if unexpected_keys:
+            logging.warning(f"Unexpected keys when loading state_dict: {unexpected_keys}")
+        
         model.eval()
         
         # Store label mappings as attributes (not part of nn.Module)
@@ -454,10 +458,6 @@ def _load_multi_task_classifier(model_path: Path, tokenizer_path: Path) -> Tuple
 
 def _load_transformer_classifier(model_path: Path) -> Tuple[Any, Any]:
     return _load_transformer_checkpoint(model_path, default_model="bert-base-uncased")
-
-
-def _load_transformer_sentiment(model_path: Path) -> Tuple[Any, Any]:
-    return _load_transformer_checkpoint(model_path, default_model="distilbert-base-uncased")
 
 
 def _load_transformer_checkpoint(model_path: Path, default_model: str) -> Tuple[Any, Any]:
@@ -712,8 +712,8 @@ def load_model_bundle(
                      If False, raise errors when models cannot be loaded.
                      Default is True for development, should be False in production.
         allow_stub_for: Set of component names that are allowed to use stubs.
-                       Only 'severity' and 'sentiment' support stub fallback.
-                       If None, defaults to {'severity', 'sentiment'}.
+                       Currently only 'multi_task_model' supports stub fallback.
+                       If None, defaults to {'multi_task_model'}.
         force_stub_for: Set of component names to force use stubs even if trained
                        models are available. Useful for testing stub behavior.
     

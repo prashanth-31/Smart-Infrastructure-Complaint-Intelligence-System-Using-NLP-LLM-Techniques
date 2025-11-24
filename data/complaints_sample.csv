@@ -1,7 +1,9 @@
 created_at,issue_type,severity,urgency,location,complaint_text
-"The street light near the 5th cross in Jayanagar has not been working for three days, leaving the stretch dark and prone to accidents.",Electrical,Medium,Angry/Urgent,Jayanagar,2025-11-24T07:56:43.043868+00:00
-Residents of Indiranagar 9th Main have had no water supply for 24 hours. Overhead tanks are empty and senior citizens are impacted.,Water Supply Disruption,HIGH,Neutral,,2025-11-24T07:57:11.579728+00:00
-Garbage heap near Rajajinagar 4th block park has not been cleared for a week. Stray dogs and foul smell are troubling residents.,Waste & Sanitation,Medium,Neutral,Rajajinagar,2025-11-24T07:57:50.739941+00:00
-"I am extremely furious! The situation at Neeladri Road, Electronic City Phase 1 is completely out of control. The entire stretch is filled with deep potholes, broken patches, and stagnant dirty water. Every day vehicles are getting damaged, bikers are falling, and traffic is a nightmare. Despite constant complaints from residents, absolutely NOTHING has been repaired for months. To make things worse, the streetlights on this SAME ROAD don’t work at night, turning it into a dangerous zone for women and pedestrians. This neglect is outrageous! Fix Neeladri Road immediately. Enough of this carelessness",Road & Pothole Hazard,HIGH,Neutral,,2025-11-24T07:58:32.438540+00:00
-Debris Removal / Construction Material in Malleshwaram,Call Center,Low,Neutral,Malleshwaram,2025-11-24T08:00:16.021646+00:00
-Street Light Not Working in Dodda Bidarkallu,Electrical,High,Neutral,,2025-11-24T08:02:40.747561+00:00
+2025-11-24T09:25:10.752516+00:00,Electrical,Medium,Angry/Urgent,Jayanagar,"The street light near the 5th cross in Jayanagar has not been working for three days, leaving the stretch dark and prone to accidents."
+2025-11-24T09:26:03.449508+00:00,Water Supply Disruption,High,Neutral,,Residents of Indiranagar 9th Main have had no water supply for 24 hours. Overhead tanks are empty and senior citizens are impacted.
+2025-11-24T09:26:58.023155+00:00,Water Supply Disruption,High,Neutral,,Residents of Indiranagar 9th Main have had no water supply for 24 hours. Overhead tanks are empty and senior citizens are impacted.
+2025-11-24T09:27:17.920188+00:00,Waste & Sanitation,Medium,Neutral,Rajajinagar,Garbage heap near Rajajinagar 4th block park has not been cleared for a week. Stray dogs and foul smell are troubling residents.
+2025-11-24T09:27:52.936312+00:00,Call Center,Low,Neutral,Malleshwaram,Debris Removal / Construction Material in Malleshwaram
+2025-11-24T09:28:21.224598+00:00,Road & Pothole Hazard,High,Angry/Urgent,Vijayanagar,"There is a strong gas leak smell on Maruthi Mandir Road in Vijayanagar, and I am very worried it could lead to a dangerous accident—please respond immediately."
+2025-11-24T09:30:24.601551+00:00,Health Dept,Low,Concerned,,Concerned how many days to complete sweeping the street
+2025-11-24T09:31:01.477180+00:00,Road & Pothole Hazard,Low,Concerned,,Concerned how many days to complete sweeping the road in rajajinagar

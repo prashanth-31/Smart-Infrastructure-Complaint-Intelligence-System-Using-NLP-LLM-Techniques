@@ -18,11 +18,12 @@ def normalize_text(text: str) -> str:
 
 def build_feature_row(analysis: Dict[str, str]) -> Dict[str, str]:
     return {
-        "complaint_text": analysis.get("text", ""),
+        "created_at": analysis.get("created_at", ""),
         "issue_type": analysis.get("issue_type", ""),
         "severity": analysis.get("severity", ""),
         "urgency": analysis.get("urgency", ""),
         "location": analysis.get("location", ""),
+        "complaint_text": analysis.get("text", ""),
     }
 
 

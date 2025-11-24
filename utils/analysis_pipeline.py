@@ -13,6 +13,7 @@ from transformers import Pipeline, pipeline
 from models.pipeline_loader import ModelBundle, StubSeverity
 from utils.preprocessing import normalize_text
 from utils.severity_rules import infer_severity_from_keywords
+from utils.urgency_rules import infer_urgency_from_keywords
 from utils.validation import (
     validate_classifier_output,
     validate_ner_output,
@@ -41,9 +42,7 @@ class AnalysisResult:
 class _PipelineCache:
     def __init__(self) -> None:
         self._classifier_cache: Dict[int, Pipeline] = {}
-        self._sentiment_cache: Dict[int, Pipeline] = {}
         self._classifier_lock = threading.Lock()
-        self._sentiment_lock = threading.Lock()
     
     def get_classifier_pipeline(self, bundle: ModelBundle) -> Pipeline:
         key = id(bundle.multi_task_model)
@@ -58,29 +57,10 @@ class _PipelineCache:
                 )
             return self._classifier_cache[key]
     
-    def get_sentiment_pipeline(self, bundle: ModelBundle) -> Pipeline:
-        key = id(bundle.multi_task_model)
-        with self._sentiment_lock:
-            if key not in self._sentiment_cache:
-                try:
-                    self._sentiment_cache[key] = pipeline(
-                        "text-classification",
-                        model=bundle.multi_task_model,  # type: ignore[arg-type]
-                        tokenizer=bundle.tokenizer,
-                        top_k=None,
-                        return_all_scores=True,
-                    )
-                except (OSError, ValueError, RuntimeError, TypeError) as exc:
-                    logging.error("Sentiment pipeline initialisation failed: %s", exc, exc_info=True)
-                    raise RuntimeError("Sentiment model pipeline could not be initialised") from exc
-            return self._sentiment_cache[key]
-    
     def clear(self) -> None:
         """Clear all cached pipelines. Useful for testing and memory management."""
         with self._classifier_lock:
             self._classifier_cache.clear()
-        with self._sentiment_lock:
-            self._sentiment_cache.clear()
 
 
 _pipeline_cache = _PipelineCache()
@@ -129,10 +109,6 @@ def _normalize_scores(entries: Iterable[Any]) -> List[_ScoreDict]:
 
 def _get_text_classification_pipeline(bundle: ModelBundle) -> Pipeline:
     return _pipeline_cache.get_classifier_pipeline(bundle)
-
-
-def _get_sentiment_pipeline(bundle: ModelBundle) -> Pipeline:
-    return _pipeline_cache.get_sentiment_pipeline(bundle)
 
 
 ProbabilityList = List[Dict[str, Any]]
@@ -323,6 +299,18 @@ def _predict_sentiment(bundle: ModelBundle, text: str) -> Tuple[str, float, Prob
             for lbl, prob in zip(urgency_labels, urgency_probs)
         ]
         
+        # Apply keyword hints to boost urgency if appropriate
+        hint = infer_urgency_from_keywords(text)
+        if hint:
+            # hint is already in display format: "Angry/Urgent", "Concerned", "Neutral"
+            minimum_conf = 0.80 if hint == "Angry/Urgent" else 0.70
+            current_prob = next((float(p.get("score", 0.0)) for p in mapped_scores if p.get("label") == hint), 0.0)
+            if hint != mapped_label or current_prob < minimum_conf:
+                mapped_scores, confidence = _apply_urgency_hint(mapped_scores, hint, minimum_conf)
+                mapped_label = hint
+            else:
+                confidence = current_prob
+        
         return mapped_label, confidence, mapped_scores
         
     except Exception as exc:
@@ -359,6 +347,45 @@ def _apply_severity_hint(probabilities: ProbabilityList, target_label: str, mini
     else:
         if score_map[target_label] < minimum_confidence:
             remaining = max(total - score_map[target_label], 0.0)
+            boosted_target = min(1.0, minimum_confidence)
+            remainder = max(0.0, 1.0 - boosted_target)
+            if remaining > 0 and remainder > 0:
+                scale = remainder / remaining
+                for label in score_map:
+                    if label == target_label:
+                        continue
+                    score_map[label] *= scale
+            else:
+                other_labels = [label for label in score_map if label != target_label]
+                split = remainder / max(len(other_labels), 1)
+                for label in other_labels:
+                    score_map[label] = split
+            score_map[target_label] = boosted_target
+        total = sum(score_map.values())
+        if total > 0:
+            score_map = {label: value / total for label, value in score_map.items()}
+
+    updated = [
+        {"label": label, "score": float(score_map.get(label, 0.0))}
+        for label in label_order
+    ]
+    if target_label not in label_order:
+        updated.append({"label": target_label, "score": float(score_map[target_label])})
+    return updated, float(score_map[target_label])
+
+
+def _apply_urgency_hint(probabilities: ProbabilityList, target_label: str, minimum_confidence: float) -> Tuple[ProbabilityList, float]:
+    """Apply keyword-based urgency hint to boost confidence in target label."""
+    if not probabilities:
+        return ([{"label": target_label, "score": 1.0}], 1.0)
+
+    label_order = [entry.get("label", "") for entry in probabilities]
+    score_map = {entry.get("label", ""): float(entry.get("score", 0.0)) for entry in probabilities}
+    
+    if target_label in score_map:
+        current = score_map[target_label]
+        if current < minimum_confidence:
+            remaining = sum(score_map[label] for label in score_map if label != target_label)
             boosted_target = min(1.0, minimum_confidence)
             remainder = max(0.0, 1.0 - boosted_target)
             if remaining > 0 and remainder > 0:

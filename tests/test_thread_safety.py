@@ -36,7 +36,6 @@ def test_pipeline_cache_isolation() -> None:
     
     # Verify cache is empty after clear
     assert len(_pipeline_cache._classifier_cache) == 0
-    assert len(_pipeline_cache._sentiment_cache) == 0
 
 
 if __name__ == "__main__":

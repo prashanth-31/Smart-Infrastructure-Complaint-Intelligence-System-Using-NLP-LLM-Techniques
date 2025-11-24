@@ -43,8 +43,8 @@ def record_result(analysis, csv_path: Path | None = None) -> None:
         {
             "text": analysis.raw_text,
             "issue_type": analysis.issue_type,
-            "severity": analysis.severity,
-            "urgency": analysis.urgency,
+            "severity": analysis.severity.title(),
+            "urgency": analysis.urgency.title(),
             "location": next((e["text"] for e in analysis.entities if e.get("label", "").upper() in ("LOC", "GPE", "LOCATION")), ""),
         }
     )
