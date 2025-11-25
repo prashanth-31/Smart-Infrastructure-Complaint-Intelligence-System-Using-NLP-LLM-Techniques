@@ -309,6 +309,10 @@ def _load_multi_task_classifier(model_path: Path, tokenizer_path: Path) -> Tuple
         RuntimeError: If model cannot be loaded
         FileNotFoundError: If files don't exist
     """
+    logging.info("=== Starting _load_multi_task_classifier ===")
+    logging.info(f"Model path: {model_path}")
+    logging.info(f"Tokenizer path: {tokenizer_path}")
+    
     from transformers import AutoTokenizer, AutoModel
     
     torch = _get_torch()
@@ -316,38 +320,68 @@ def _load_multi_task_classifier(model_path: Path, tokenizer_path: Path) -> Tuple
     if not model_path.exists():
         raise FileNotFoundError(f"Multi-task model not found at {model_path}")
     
+    logging.info("Model file exists, loading checkpoint...")
     # Load checkpoint
     try:
         checkpoint = torch.load(model_path, map_location='cpu', weights_only=False)
+        logging.info("Checkpoint loaded successfully")
     except Exception as exc:
+        logging.error(f"Failed to load checkpoint: {exc}")
         raise RuntimeError(f"Failed to load checkpoint from {model_path}: {exc}") from exc
     
     # Verify checkpoint structure
     if 'model_state_dict' not in checkpoint:
         raise ValueError("Checkpoint missing 'model_state_dict'")
     
+    logging.info("Checkpoint structure verified")
+    
     # Check for meta tensors
     state_dict = checkpoint['model_state_dict']
+    logging.info(f"State dict has {len(state_dict)} keys")
     for name, param in state_dict.items():
         if hasattr(param, 'is_meta') and param.is_meta:
             raise ValueError(f"Model contains meta tensors (no actual weights): {name}")
     
     # Load base BERT model architecture
     base_model_name = checkpoint.get('base_model', 'bert-base-uncased')
+    logging.info(f"Base model: {base_model_name}")
     
     try:
         # Create model with the saved architecture
         from torch import nn
+        from transformers import BertModel, BertConfig
+        
+        logging.info("Defining MultiTaskComplaintClassifier class...")
         
         class MultiTaskComplaintClassifier(nn.Module):
-            def __init__(self, base_model_name, num_categories, num_severity, num_urgency):
+            def __init__(self, base_model_name, num_categories, num_severity, num_urgency, load_pretrained=True):
                 super().__init__()
-                # Try loading from cache first, then download if needed
-                try:
-                    self.bert = AutoModel.from_pretrained(base_model_name, local_files_only=False)
-                except Exception:
-                    # Fallback to loading without local_files_only restriction
-                    self.bert = AutoModel.from_pretrained(base_model_name)
+                logging.info(f"Initializing MultiTaskComplaintClassifier (load_pretrained={load_pretrained})")
+                if load_pretrained:
+                    # Only download BERT if we don't have weights in checkpoint
+                    logging.info("Attempting to load pretrained BERT...")
+                    try:
+                        self.bert = AutoModel.from_pretrained(base_model_name, local_files_only=True)
+                        logging.info("BERT loaded from local files")
+                    except Exception as e:
+                        logging.error(f"Local load failed: {e}")
+                        logging.error("BERT weights not in checkpoint and not available locally.")
+                        raise RuntimeError(
+                            f"Cannot load BERT model '{base_model_name}'. "
+                            f"Either include BERT weights in checkpoint or download model first with: "
+                            f"python download_bert.py"
+                        )
+                else:
+                    # Create empty BERT architecture that will be filled by state_dict
+                    logging.info("Creating BERT architecture from config...")
+                    try:
+                        config = BertConfig.from_pretrained(base_model_name, local_files_only=True)
+                    except Exception:
+                        # Use default config if can't load from HF
+                        config = BertConfig()
+                    self.bert = BertModel(config)
+                    logging.info("BERT architecture created")
+                    
                 self.category_head = nn.Linear(768, num_categories)
                 self.severity_head = nn.Linear(768, num_severity)
                 self.urgency_head = nn.Linear(768, num_urgency)
@@ -390,7 +424,15 @@ def _load_multi_task_classifier(model_path: Path, tokenizer_path: Path) -> Tuple
             num_urgency = state_dict['urgency_head.weight'].shape[0]
             logging.info(f"Inferred num_urgency={num_urgency} from state_dict")
         
-        model = MultiTaskComplaintClassifier(base_model_name, num_categories, num_severity, num_urgency)
+        # Check if state_dict contains BERT weights
+        has_bert_weights = any(k.startswith('bert.') for k in state_dict.keys())
+        logging.info(f"Checkpoint has BERT weights: {has_bert_weights}")
+        
+        # Create model - don't load pretrained BERT if weights are in checkpoint
+        model = MultiTaskComplaintClassifier(
+            base_model_name, num_categories, num_severity, num_urgency, 
+            load_pretrained=not has_bert_weights
+        )
         
         # Load state dict with strict=False to handle missing keys
         # First move model to CPU to avoid meta tensor issues
@@ -758,9 +800,14 @@ def load_model_bundle(
     # Load multi-task classifier
     try:
         if multi_task_path.exists():
+            logging.info(f"Attempting to load multi-task classifier from {multi_task_path}")
             multi_task_model, tokenizer = _load_multi_task_classifier(multi_task_path, tokenizer_dir)
+            logging.info("Multi-task classifier loaded successfully")
     except (OSError, ValueError, RuntimeError, KeyError) as exc:
         logging.error("Failed to load multi-task classifier from %s: %s", multi_task_path, exc, exc_info=True)
+    except Exception as exc:
+        # Catch any other unexpected errors
+        logging.error("Unexpected error loading multi-task classifier: %s", exc, exc_info=True)
 
     # Load NER model
     try:
